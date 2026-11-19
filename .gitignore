@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.DS_Store
+
+# contenido multimedia (no se publica: derechos de terceros)
+videos/*
+!videos/.gitkeep
+clips/raw/
+
+# pesos de modelos (se descargan solos)
+models/
+*.pt

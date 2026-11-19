@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emociones con Gemma</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1d2129; --line: #262a33; --text: #e8eaed; --muted: #8b919c;
+    --accent: #7cc4ff; --hl: #ffd34d; --err: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, sans-serif; }
+  button, input, select { font: inherit; color: inherit; }
+  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px 20px 0; }
+  h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; max-width: 900px; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: none; }
+  .seg button { background: transparent; border: 0; padding: 6px 12px; cursor: pointer; color: var(--muted); font-weight: 600; }
+  .seg button.on { background: var(--accent); color: #0b1a26; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .btn.ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--line); }
+  .btn.live-on { background: var(--err); color: #fff; }
+  .livestat { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  main { display: grid; grid-template-columns: 280px minmax(0, 1fr) 290px; gap: 16px; padding: 16px 20px; align-items: start; }
+  @media (max-width: 1150px) { main { grid-template-columns: 260px minmax(0, 1fr); } .right { grid-column: 2; } }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; padding: 12px 16px; } .right { grid-column: auto; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .panel h2 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+  .panel + .panel { margin-top: 12px; }
+  .field { display: flex; gap: 6px; }
+  .field input { flex: 1; min-width: 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; }
+  .btn { background: var(--accent); color: #0b1a26; border: 0; border-radius: 7px; padding: 7px 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .drop { margin-top: 10px; border: 1.5px dashed var(--line); border-radius: 8px; padding: 14px; text-align: center; color: var(--muted); font-size: 13px; cursor: pointer; }
+  .drop.over { border-color: var(--accent); color: var(--text); background: #7cc4ff14; }
+  .opts { margin-top: 10px; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+  .opts select { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+  .job { font-size: 12px; margin-top: 8px; }
+  .job .t { display: flex; justify-content: space-between; gap: 8px; }
+  .job .t span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .job .pb { height: 4px; background: var(--line); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  .job .pb div { height: 100%; background: var(--accent); }
+  .job.error .t span:last-child { color: var(--err); }
+  .job .msg { color: var(--err); margin-top: 2px; word-break: break-word; }
+  .lib { list-style: none; margin: 0; padding: 0; max-height: 46vh; overflow: auto; }
+  .lib li { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; cursor: pointer; }
+  .lib li:hover { background: var(--panel2); }
+  .lib li.sel { background: #7cc4ff22; }
+  .lib .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .lib .st { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .lib .del { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 2px 4px; border-radius: 4px; font-size: 12px; }
+  .lib .del:hover, .lib .del.arm { color: var(--err); }
+  .empty { color: var(--muted); font-size: 13px; }
+  .stage { position: relative; background: #000; border-radius: 10px; overflow: hidden; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+  .stage video, .stage img { display: block; width: 100%; height: auto; max-height: 75vh; object-fit: contain; }
+  .stage canvas { position: absolute; pointer-events: none; }
+  .placeholder { color: var(--muted); padding: 60px 20px; text-align: center; }
+  .now { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; min-height: 56px; }
+  .now .big { font-size: 52px; line-height: 1; }
+  .now .name { font-size: 20px; font-weight: 600; text-transform: capitalize; }
+  .now .conf { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+  .bar { display: grid; grid-template-columns: 24px 96px 1fr 40px; align-items: center; gap: 6px; margin: 5px 0; }
+  .bar .track { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .bar .fill { height: 100%; background: var(--accent); width: 0; transition: width .12s linear; }
+  .bar.top .fill { background: var(--hl); }
+  .bar .v { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips:not(:empty) { margin-bottom: 10px; }
+  .chips button { background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; cursor: pointer; font-size: 12px; }
+  .chips button.on { border-color: var(--hl); color: var(--hl); }
+  .others { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  .ctrl { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+  .ctrl label { display: grid; gap: 4px; color: var(--muted); font-size: 12px; }
+  .ctrl select { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .note { color: var(--muted); font-size: 12px; }
+  .timeline { margin-top: 12px; }
+  .strip { position: relative; display: flex; height: 30px; border-radius: 6px; overflow: hidden; cursor: pointer; background: var(--panel); border: 1px solid var(--line); }
+  .strip span { flex: 1; min-width: 0; }
+  .strip .head { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; pointer-events: none; }
+  .legend { margin-top: 8px; color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; }
+  .offline { background: #ff6b6b22; border: 1px solid var(--err); padding: 10px 14px; border-radius: 8px; margin: 12px 20px 0; font-size: 13px; }
+  .offline code { background: #0006; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1 data-i18n="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <div class="seg" id="langSeg" role="group" aria-label="Idioma / Language">
+    <button data-lang="es">ES</button><button data-lang="en">EN</button>
+  </div>
+</header>
+<div class="offline" id="offline" hidden></div>
+<main>
+  <section class="left">
+    <div class="panel">
+      <h2 data-i18n="add"></h2>
+      <form class="field" id="urlForm">
+        <input id="url" type="url" required data-i18n-ph="urlPh">
+        <button class="btn" data-i18n="download"></button>
+      </form>
+      <div class="drop" id="drop"><span data-i18n="drop"></span><input type="file" id="file" accept="video/*,image/*" multiple hidden></div>
+      <div class="opts"><span data-i18n="fpsLbl"></span>
+        <select id="fps"><option value="1">1</option><option value="2" selected>2</option><option value="4">4</option><option value="8">8</option></select>
+        <span data-i18n="fpsUnit"></span></div>
+      <div id="jobs"></div>
+    </div>
+    <div class="panel">
+      <h2 data-i18n="library"></h2>
+      <ul class="lib" id="lib"></ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="toolbar">
+      <div class="seg" id="modeSeg" role="group">
+        <button data-mode="emotion"></button><button data-mode="scene"></button>
+      </div>
+      <button class="btn ghost" id="liveBtn"></button>
+      <span class="livestat" id="liveStat"></span>
+    </div>
+    <div class="stage" id="stage"><div class="placeholder" data-i18n="pick"></div></div>
+    <div class="timeline" id="timeline" hidden>
+      <div class="strip" id="strip"><div class="head" id="head"></div></div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <aside class="panel right">
+    <div class="chips" id="chips"></div>
+    <div class="now"><div class="big" id="nowEmoji">—</div><div><div class="name" id="nowName"></div><div class="conf" id="nowConf"></div></div></div>
+    <div id="bars"></div>
+    <div class="others" id="others"></div>
+    <div class="ctrl">
+      <label><span data-i18n="calib"></span>
+        <select id="calib"></select></label>
+      <label id="smoothWrap"><span><span data-i18n="smooth"></span> <b id="smoothV"></b></span>
+        <input type="range" id="smooth" min="0" max="8" step="1" value="2"></label>
+      <label><span><span data-i18n="temp"></span> <b id="tempV"></b></span>
+        <input type="range" id="temp" min="20" max="400" step="10" value="60"></label>
+      <div class="note" data-i18n="calibNote"></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+const I18N = {
+  es: {
+    title: 'Gemma: emociones y escenas',
+    sub_emotion: 'Caja: detector de caras (OpenCV). Emoción: Gemma compara el embedding del recorte de la cara con embeddings de texto de cada emoción (zero-shot, sin entrenamiento). Sólo ve la cara, no el texto que haya fuera de la caja.',
+    sub_scene: 'Cajas: YOLO detecta y sigue personas, bicis, coches, animales… Actividad: Gemma recibe un clip de 2 s del recorte de cada persona y lo compara con descripciones de texto de cada actividad (zero-shot).',
+    mode_emotion: '😄 Emociones', mode_scene: '🎬 Escena',
+    add: 'Añadir', urlPh: 'URL de YouTube u otro sitio…', download: 'Descargar',
+    drop: 'Arrastra aquí videos o imágenes, o haz clic para elegir', fpsLbl: 'Muestreo:', fpsUnit: 'por segundo',
+    library: 'Biblioteca (carpeta videos/)', pick: 'Elige un archivo de la biblioteca o añade uno nuevo',
+    emptyLib: 'Vacía. Pega una URL o arrastra un archivo.',
+    notAnalyzed: 'sin analizar', analyze: 'Analizar', del: 'borrar', sure: '¿seguro?',
+    queued: 'en cola', download_: 'descargando', loading: 'cargando modelo', analyze_: 'analizando', done: 'listo', error: 'error',
+    noFace: 'sin cara', noPerson: 'sin personas', face: 'Cara', wholeImg: 'imagen completa (no se detectó cara)',
+    calib: 'Calibración', calibFile: 'Por este archivo', calibLib: 'Por toda la biblioteca', calibNone: 'Ninguna',
+    smooth: 'Suavizado temporal:', smoothOff: 'apagado', samples: 'muestras', temp: 'Contraste (temperatura):',
+    calibNote: 'Calibrar resta a cada etiqueta su similitud media (en este archivo o en toda la biblioteca). Quita el sesgo de cada frase de texto y resalta las diferencias. Si en el video todos hacen lo mismo todo el rato, mejor sin calibrar.',
+    offline: 'No hay conexión con el servidor. Arráncalo con <code>.venv/bin/python server.py</code> y abre <code>http://127.0.0.1:8765</code>.',
+    notAnalyzedView: 'Este archivo aún no está analizado en este modo.',
+    sceneVideoOnly: 'El modo escena es sólo para video; las imágenes se muestran con emociones.',
+    inScene: 'En escena:', auto: '⭐ Auto (principal)',
+    live: '📷 Cámara en directo', liveStop: '⏹ Parar cámara', liveLoading: 'cargando modelos…', liveCam: 'pidiendo permiso para la cámara…',
+    liveErr: 'No se pudo abrir la cámara:', liveConn: 'Conexión con el servidor cerrada.', liveWait: 'Gemma aún no ha clasificado',
+  },
+  en: {
+    title: 'Gemma: emotions and scenes',
+    sub_emotion: 'Box: face detector (OpenCV). Emotion: Gemma compares the embedding of the face crop with text embeddings for each emotion (zero-shot, no training). It only sees the face, not any text outside the box.',
+    sub_scene: 'Boxes: YOLO detects and tracks people, bikes, cars, animals… Activity: Gemma gets a 2 s clip of each person crop and compares it with text descriptions of each activity (zero-shot).',
+    mode_emotion: '😄 Emotions', mode_scene: '🎬 Scene',
+    add: 'Add', urlPh: 'YouTube or other video URL…', download: 'Download',
+    drop: 'Drop videos or images here, or click to choose', fpsLbl: 'Sampling:', fpsUnit: 'per second',
+    library: 'Library (videos/ folder)', pick: 'Pick a file from the library or add a new one',
+    emptyLib: 'Empty. Paste a URL or drop a file.',
+    notAnalyzed: 'not analyzed', analyze: 'Analyze', del: 'delete', sure: 'sure?',
+    queued: 'queued', download_: 'downloading', loading: 'loading model', analyze_: 'analyzing', done: 'done', error: 'error',
+    noFace: 'no face', noPerson: 'no people', face: 'Face', wholeImg: 'whole image (no face detected)',
+    calib: 'Calibration', calibFile: 'Per this file', calibLib: 'Whole library', calibNone: 'None',
+    smooth: 'Temporal smoothing:', smoothOff: 'off', samples: 'samples', temp: 'Contrast (temperature):',
+    calibNote: 'Calibration subtracts each label\'s mean similarity (in this file or across the library). It removes the bias of each text prompt and highlights differences. If everyone does the same thing all the time, leave it off.',
+    offline: 'Cannot reach the server. Start it with <code>.venv/bin/python server.py</code> and open <code>http://127.0.0.1:8765</code>.',
+    notAnalyzedView: 'This file has not been analyzed in this mode yet.',
+    sceneVideoOnly: 'Scene mode is for video only; images are shown with emotions.',
+    inScene: 'In scene:', auto: '⭐ Auto (main)',
+    live: '📷 Live camera', liveStop: '⏹ Stop camera', liveLoading: 'loading models…', liveCam: 'asking for camera permission…',
+    liveErr: 'Could not open the camera:', liveConn: 'Connection to the server closed.', liveWait: 'Gemma has not classified yet',
+  },
+};
+const COLORS = ['#f5c542', '#5b8def', '#e5484d', '#b07cff', '#2fb39a', '#7bb23a', '#7d828c', '#ff8a3d', '#ff6fb5', '#4dd0e1', '#c0ca33', '#a1887f', '#90caf9', '#f48fb1', '#80cbc4'];
+const OBJ_COLOR = '#cfd3da';
+const $ = id => document.getElementById(id);
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let lang = store.get('lang') || ((navigator.language || 'es').startsWith('en') ? 'en' : 'es');
+let mode = store.get('mode') || 'emotion';
+let ALL = { emotion: [], scene: [] }, LABELS = [];
+let library = [], libMean = null;
+let cur = null;          // {name, type, kind:'emotion'|'scene', res, item}
+let probs = [];          // emociones: por muestra/cara.  escena: Map id -> [{si, p}]
+let sel = 0;             // cara seleccionada (imagen) o id de persona fijada (escena)
+let pinned = false;      // escena: false = seguir a la persona principal de cada momento
+let media = null;
+let lastJobs = [], polling = false;
+const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+const t = k => I18N[lang][k] ?? k;
+const lname = l => l[lang];
+
+// ---------------- idioma y modo ----------------
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(e => e.innerHTML = t(e.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(e => e.placeholder = t(e.dataset.i18nPh));
+  document.querySelectorAll('#langSeg button').forEach(b => b.classList.toggle('on', b.dataset.lang === lang));
+  document.querySelectorAll('#modeSeg button').forEach(b => { b.textContent = t('mode_' + b.dataset.mode); b.classList.toggle('on', b.dataset.mode === mode); });
+  $('subtitle').textContent = t('sub_' + mode);
+  $('liveBtn').textContent = live ? t('liveStop') : t('live');
+  $('liveBtn').classList.toggle('live-on', !!live);
+  document.title = t('title');
+  if (!$('offline').hidden) $('offline').innerHTML = t('offline');
+  buildCalibSelect();
+  buildStatic();
+  renderLib(); renderJobs(lastJobs);
+  if (cur?.live) { LABELS = ALL[cur.kind]; buildStatic(); }
+  else if (cur) { if (!cur.res) open(cur.item); else { buildChips(); compute(); } }
+  else showNone();
+}
+document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => { lang = b.dataset.lang; store.set('lang', lang); applyLang(); });
+document.querySelectorAll('#modeSeg button').forEach(b => b.onclick = () => {
+  mode = b.dataset.mode; store.set('mode', mode); LABELS = ALL[mode];
+  if (live) { startLive(); return; }   // la cámara sigue, con el otro modo
+  const it = cur?.item; cur = null; media = null;
+  applyLang();
+  if (it) open(library.find(x => x.name === it.name) || it); else closeView();
+});
+
+function buildStatic() {
+  $('legend').innerHTML = LABELS.map((l, k) => `<span><span class="sw" style="background:${COLORS[k]}"></span>${l.emoji} ${lname(l)}</span>`).join('');
+  $('bars').innerHTML = LABELS.map((l, k) => `<div class="bar" id="b${k}"><span>${l.emoji}</span><span>${lname(l)}</span><div class="track"><div class="fill"></div></div><span class="v"></span></div>`).join('');
+}
+
+function buildCalibSelect() {
+  const s = $('calib'), v = s.value;
+  const opts = [['file', t('calibFile')], ['library', t('calibLib')], ['none', t('calibNone')]].filter(([k]) => !(k === 'library' && cur?.kind === 'scene'));
+  s.innerHTML = opts.map(([k, txt]) => `<option value="${k}">${txt}</option>`).join('');
+  s.value = opts.some(o => o[0] === v) ? v : 'none';
+}
+
+// ---------------- API ----------------
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) { let m = r.statusText; try { m = (await r.json()).detail || m; } catch {} throw new Error(m); }
+  return r.json();
+}
+const postJSON = (path, body) => api(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+async function refreshLibrary() {
+  library = await api('/api/library');
+  libMean = (await api('/api/calibration')).mean;
+  renderLib();
+}
+
+const isDone = it => (mode === 'scene' && it.type === 'video') ? it.scene : it.analyzed;
+function renderLib() {
+  const ul = $('lib');
+  if (!library.length) { ul.innerHTML = `<li class="empty">${t('emptyLib')}</li>`; return; }
+  ul.innerHTML = '';
+  library.forEach(it => {
+    const li = document.createElement('li');
+    li.classList.toggle('sel', cur?.name === it.name);
+    li.innerHTML = `<span>${it.type === 'video' ? '🎬' : '🖼️'}</span><span class="nm" title="${esc(it.name)}">${esc(it.name)}</span>
+      <span class="st">${isDone(it) ? '✓' : t('notAnalyzed')}</span><button class="del" title="${t('del')}">✕</button>`;
+    li.onclick = e => { if (!e.target.classList.contains('del')) open(it); };
+    const del = li.querySelector('.del');
+    del.onclick = async () => {
+      if (!del.classList.contains('arm')) { del.classList.add('arm'); del.textContent = t('sure'); setTimeout(() => { del.classList.remove('arm'); del.textContent = '✕'; }, 2500); return; }
+      await api('/api/media/' + encodeURIComponent(it.name), { method: 'DELETE' });
+      if (cur?.name === it.name) closeView();
+      refreshLibrary();
+    };
+    ul.appendChild(li);
+  });
+}
+
+// ---------------- trabajos ----------------
+function renderJobs(jobs) {
+  lastJobs = jobs;
+  $('jobs').innerHTML = jobs.filter(j => j.stage !== 'done' || Date.now() / 1000 - j.created < 600).slice(0, 5).map(j => {
+    const st = j.stage === 'download' ? t('download_') : j.stage === 'analyze' ? t('analyze_') : t(j.stage);
+    const pct = j.stage === 'done' ? 100 : Math.round(j.progress * 100);
+    const icon = j.mode === 'scene' ? '🎬 ' : j.mode === 'emotion' ? '😄 ' : '';
+    return `<div class="job ${j.stage}"><div class="t"><span title="${esc(j.label)}">${icon}${esc(j.name || j.label)}</span><span>${st}${['download', 'analyze'].includes(j.stage) ? ' ' + pct + '%' : ''}</span></div>
+      ${j.stage === 'error' ? `<div class="msg">${esc(j.error)}</div>` : `<div class="pb"><div style="width:${pct}%"></div></div>`}</div>`;
+  }).join('');
+}
+const seenDone = new Set();
+async function poll(first) {
+  if (polling) return; polling = true;
+  try {
+    while (true) {
+      const jobs = await api('/api/jobs');
+      renderJobs(jobs);
+      let finished = null;
+      for (const j of jobs) if (j.stage === 'done' && !seenDone.has(j.id)) { seenDone.add(j.id); finished = j; }
+      if (finished && !first) { await refreshLibrary(); const it = library.find(x => x.name === finished.name); if (it) { cur = null; open(it); } }
+      first = false;
+      if (!jobs.some(j => !['done', 'error'].includes(j.stage))) break;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  } finally { polling = false; }
+}
+
+$('urlForm').onsubmit = async e => {
+  e.preventDefault();
+  const url = $('url').value.trim(); if (!url) return;
+  await postJSON('/api/download', { url, fps: +$('fps').value, mode });
+  $('url').value = ''; poll();
+};
+async function uploadFiles(files) {
+  for (const f of files) {
+    const fd = new FormData(); fd.append('file', f);
+    try { await api(`/api/upload?fps=${$('fps').value}&mode=${mode}`, { method: 'POST', body: fd }); } catch (err) { console.warn(err); }
+  }
+  refreshLibrary(); poll();
+}
+const drop = $('drop');
+drop.onclick = () => $('file').click();
+$('file').onchange = e => { uploadFiles([...e.target.files]); e.target.value = ''; };
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => uploadFiles([...e.dataTransfer.files]));
+
+// ---------------- visor ----------------
+function closeView() {
+  stopLive();
+  cur = null; media = null; probs = [];
+  $('stage').innerHTML = `<div class="placeholder">${t('pick')}</div>`;
+  $('timeline').hidden = true; $('chips').innerHTML = ''; $('others').textContent = '';
+  showNone(); renderLib();
+}
+
+async function open(it) {
+  if (live) stopLive();
+  const kind = (mode === 'scene' && it.type === 'video') ? 'scene' : 'emotion';
+  let res = null;
+  if (kind === 'scene' ? it.scene : it.analyzed) { try { res = await api(`/api/result/${encodeURIComponent(it.name)}?mode=${kind}`); } catch {} }
+  const same = cur?.name === it.name && media;
+  cur = { name: it.name, type: it.type, kind, res, item: it };
+  LABELS = ALL[kind];
+  buildStatic();
+  sel = 0;
+  renderLib();
+  const stage = $('stage');
+  if (!same) {
+    stage.innerHTML = '';
+    const src = '/media/' + encodeURIComponent(it.name) + (location.hash.startsWith('#t=') ? location.hash : '');
+    if (it.type === 'video') {
+      media = document.createElement('video');
+      media.controls = true; media.playsInline = true; media.muted = true; media.src = src;
+      const v = media;
+      v.addEventListener('loadedmetadata', () => { draw(); loopV(v); });
+      v.addEventListener('seeked', draw);
+    } else {
+      media = document.createElement('img'); media.src = src; media.onload = draw;
+    }
+    stage.append(media, cv);
+  }
+  stage.querySelectorAll('.placeholder').forEach(p => p.remove());
+  if (!res || (mode === 'scene' && it.type !== 'video')) {
+    const p = document.createElement('div');
+    p.className = 'placeholder'; p.style.cssText = 'position:absolute;bottom:0;left:0;right:0;padding:12px;background:#000b';
+    if (mode === 'scene' && it.type !== 'video') p.textContent = t('sceneVideoOnly');
+    if (!res) {
+      p.innerHTML = `${t('notAnalyzedView')} <button class="btn">${t('analyze')}</button>`;
+      p.querySelector('button').onclick = async () => { await postJSON('/api/analyze', { name: it.name, fps: +$('fps').value, mode: kind }); p.remove(); poll(); };
+    }
+    stage.appendChild(p);
+  }
+  $('timeline').hidden = it.type !== 'video' || !res;
+  $('smoothWrap').hidden = it.type !== 'video';
+  buildCalibSelect();
+  $('calib').value = kind === 'scene' ? 'none' : it.type === 'image' ? 'library' : 'file';
+  pinned = false;
+  buildChips();
+  compute();
+}
+function loopV(v) { if (media !== v) return; draw(); v.requestVideoFrameCallback ? v.requestVideoFrameCallback(() => loopV(v)) : requestAnimationFrame(() => loopV(v)); }
+
+function items() { return cur?.res ? (cur.type === 'video' ? cur.res.samples : cur.res.faces) : []; }
+const area = b => (b[2] - b[0]) * (b[3] - b[1]);
+
+function biggestPersonId() {
+  const tot = new Map();
+  items().forEach(s => s.objects.forEach(o => { if (o.cls === 'person') tot.set(o.id, (tot.get(o.id) || 0) + area(o.box)); }));
+  return [...tot.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0;
+}
+
+function buildChips() {
+  let html = '';
+  if (cur?.kind === 'scene' && cur.res) {
+    const ids = [...new Set(items().flatMap(s => s.objects.filter(o => o.cls === 'person' && o.sims).map(o => o.id)))];
+    if (ids.length > 1) html = `<button class="${pinned ? '' : 'on'}" data-i="auto">${t('auto')}</button>` +
+      ids.map(id => `<button class="${pinned && id === sel ? 'on' : ''}" data-i="${id}">🧑 #${id}</button>`).join('');
+  } else if (cur?.type === 'image') {
+    const f = items();
+    if (f.length > 1) html = f.map((_, i) => `<button class="${i === sel ? 'on' : ''}" data-i="${i}">${t('face')} ${i + 1}</button>`).join('');
+  }
+  $('chips').innerHTML = html;
+  $('chips').querySelectorAll('button').forEach(b => b.onclick = () => {
+    if (b.dataset.i === 'auto') pinned = false; else { sel = +b.dataset.i; pinned = cur?.kind === 'scene'; }
+    buildChips(); buildStrip(); draw();
+  });
+}
+
+function softmax(v, T) {
+  const z = v.map(x => x * T), m = Math.max(...z), e = z.map(x => Math.exp(x - m)), s = e.reduce((a, b) => a + b);
+  return e.map(x => x / s);
+}
+// suaviza una serie de vectores (null = hueco) con ventana ±w y aplica softmax
+function smoothSeries(rows, w, T) {
+  return rows.map((r, i) => {
+    if (!r) return null;
+    const acc = new Array(LABELS.length).fill(0); let n = 0;
+    for (let j = i - w; j <= i + w; j++) if (rows[j]) { rows[j].forEach((x, k) => acc[k] += x); n++; }
+    return softmax(acc.map(x => x / n), T);
+  });
+}
+
+function compute() {
+  const its = items();
+  const calib = $('calib').value, T = +$('temp').value, w = cur?.type === 'video' ? +$('smooth').value : 0;
+  $('smoothV').textContent = +$('smooth').value ? `±${$('smooth').value} ${t('samples')}` : t('smoothOff');
+  $('tempV').textContent = T;
+  if (cur?.kind === 'scene') {
+    // series por persona: [{si, sims}]
+    const tracks = new Map();
+    its.forEach((s, si) => s.objects.forEach(o => { if (o.sims) { if (!tracks.has(o.id)) tracks.set(o.id, []); tracks.get(o.id).push({ si, sims: o.sims }); } }));
+    let mean = null;
+    if (calib === 'file') {
+      const all = [...tracks.values()].flat();
+      if (all.length) mean = LABELS.map((_, k) => all.reduce((a, e) => a + e.sims[k], 0) / all.length);
+    }
+    probs = new Map();
+    tracks.forEach((list, id) => {
+      const pr = smoothSeries(list.map(e => e.sims.map((x, k) => mean ? x - mean[k] : x)), w, T);
+      probs.set(id, list.map((e, i) => ({ si: e.si, p: pr[i] })));
+    });
+  } else {
+    const valid = its.filter(s => s.sims);
+    let mean = null;
+    if (calib === 'file' && valid.length) mean = LABELS.map((_, k) => valid.reduce((a, s) => a + s.sims[k], 0) / valid.length);
+    if (calib === 'library') mean = libMean;
+    probs = smoothSeries(its.map(s => s.sims ? s.sims.map((x, k) => mean ? x - mean[k] : x) : null), w, T);
+  }
+  buildStrip();
+  draw();
+}
+['calib', 'smooth', 'temp'].forEach(id => $(id).addEventListener('input', compute));
+
+const argmax = a => a.indexOf(Math.max(...a));
+
+// actividad vigente de una persona en la muestra si (la última calculada, hasta 3 s antes)
+function actAt(id, si) {
+  const list = probs.get?.(id); if (!list || !list.length) return null;
+  let lo = 0, hi = list.length - 1, best = -1;
+  while (lo <= hi) { const mid = (lo + hi) >> 1; if (list[mid].si <= si) { best = mid; lo = mid + 1; } else hi = mid - 1; }
+  if (best < 0) best = 0;
+  const S = items();
+  return Math.abs(S[list[best].si].t - S[si].t) <= 3 ? list[best].p : null;
+}
+
+// escena: persona a mostrar en la muestra si (la fijada, o la más grande con actividad)
+function focusId(si) {
+  const S = items();
+  if (pinned) return S[si].objects.some(o => o.id === sel) ? sel : null;
+  const ppl = S[si].objects.filter(o => o.cls === 'person' && actAt(o.id, si)).sort((a, b) => area(b.box) - area(a.box));
+  return ppl[0]?.id ?? null;
+}
+
+function buildStrip() {
+  const strip = $('strip');
+  strip.querySelectorAll('span').forEach(e => e.remove());
+  if (cur?.type !== 'video' || !cur.res) return;
+  const frag = document.createDocumentFragment();
+  const S = items(), N = 300, dur = S[S.length - 1].t || 1;
+  // etiqueta por trocito y luego se agrupan los trocitos seguidos iguales en un solo tramo (sin rendijas)
+  const labs = [];
+  for (let b = 0; b < N; b++) {
+    const si = idxAt(b / N * dur);
+    const fid = cur.kind === 'scene' ? focusId(si) : null;
+    const p = cur.kind === 'scene' ? (fid != null ? actAt(fid, si) : null) : probs[si];
+    labs.push(p ? argmax(p) : -1);
+  }
+  for (let b = 0; b < N;) {
+    let e = b; while (e < N && labs[e] === labs[b]) e++;
+    const sp = document.createElement('span'), k = labs[b];
+    sp.style.flex = `${e - b} 1 0`;
+    if (k >= 0) { sp.style.background = COLORS[k] + '77'; sp.title = `${(b / N * dur).toFixed(1)}–${(e / N * dur).toFixed(1)}s · ${lname(LABELS[k])}`; }
+    frag.appendChild(sp);
+    b = e;
+  }
+  strip.insertBefore(frag, $('head'));
+}
+$('strip').addEventListener('click', e => {
+  if (!(media instanceof HTMLVideoElement) || !media.duration) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  media.currentTime = (e.clientX - r.left) / r.width * media.duration;
+});
+
+function idxAt(tm) {
+  const S = items(); let lo = 0, hi = S.length - 1;
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (S[mid].t <= tm) lo = mid; else hi = mid - 1; }
+  return lo;
+}
+
+function showNone(msg) {
+  $('nowEmoji').textContent = '—'; $('nowName').textContent = cur?.res ? (msg || t('noFace')) : ''; $('nowConf').textContent = '';
+  LABELS.forEach((_, k) => { const b = $('b' + k); if (!b) return; b.classList.remove('top'); b.querySelector('.fill').style.width = '0'; b.querySelector('.v').textContent = ''; });
+}
+function showPanel(p, extra) {
+  const k = argmax(p);
+  $('nowEmoji').textContent = LABELS[k].emoji; $('nowName').textContent = lname(LABELS[k]);
+  $('nowConf').textContent = `${(p[k] * 100).toFixed(0)}%${extra ? ' · ' + extra : ''}`;
+  p.forEach((x, j) => { const b = $('b' + j); b.classList.toggle('top', j === k); b.querySelector('.fill').style.width = (x * 100) + '%'; b.querySelector('.v').textContent = (x * 100).toFixed(0) + '%'; });
+}
+
+// caja con etiqueta: emoji grande + texto en una pastilla
+function drawLabeled(box, color, emoji, text, dpr, sx, sy, opts = {}) {
+  const [x0, y0, x1, y1] = box, X = x0 * sx, Y = y0 * sy, W = (x1 - x0) * sx;
+  ctx.lineWidth = (opts.bold ? 3 : 2) * dpr; ctx.strokeStyle = color;
+  ctx.setLineDash(opts.dashed ? [8 * dpr, 6 * dpr] : []);
+  ctx.strokeRect(X, Y, W, (y1 - y0) * sy); ctx.setLineDash([]);
+  const fs = opts.small ? 16 * dpr : Math.max(22 * dpr, Math.min(W * 0.22, 80 * dpr));
+  const top = Y - fs - 8 * dpr < 0 ? Y + fs + 8 * dpr : Y;   // sin espacio arriba: dentro de la caja
+  const ex = Y === top ? X : X + 6 * dpr;
+  ctx.font = `${fs}px system-ui, "Apple Color Emoji", sans-serif`; ctx.textBaseline = 'bottom';
+  ctx.fillText(emoji, ex, top - 4 * dpr);
+  ctx.font = `600 ${12 * dpr}px system-ui, sans-serif`;
+  const tw = ctx.measureText(text).width + 10 * dpr, lx = ex + fs * 1.1, ly = top - Math.min(fs, 24 * dpr) / 2 - 11 * dpr;
+  ctx.fillStyle = color; ctx.fillRect(lx, ly, tw, 20 * dpr);
+  ctx.fillStyle = '#000'; ctx.textBaseline = 'middle'; ctx.fillText(text, lx + 5 * dpr, ly + 10 * dpr);
+}
+
+function draw() {
+  if (!media || !cur) return;
+  // el canvas cubre exactamente el área visible del medio (object-fit: contain)
+  const r = media.getBoundingClientRect(), sr = $('stage').getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  const nw = media.videoWidth || media.naturalWidth, nh = media.videoHeight || media.naturalHeight;
+  if (!nw || !nh) return;
+  const scale = Math.min(r.width / nw, r.height / nh), dw = nw * scale, dh = nh * scale;
+  const left = r.left - sr.left + (r.width - dw) / 2, topPx = r.top - sr.top + (r.height - dh) / 2;
+  Object.assign(cv.style, { left: left + 'px', top: topPx + 'px', width: dw + 'px', height: dh + 'px' });
+  if (cv.width !== Math.round(dw * dpr) || cv.height !== Math.round(dh * dpr)) { cv.width = Math.round(dw * dpr); cv.height = Math.round(dh * dpr); }
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  $('others').textContent = '';
+  if (cur.live) { drawLive(dpr); return; }
+  if (!cur.res) { showNone(); return; }
+  const sx = cv.width / cur.res.width, sy = cv.height / cur.res.height;
+  if (cur.type === 'video') $('head').style.left = (media.duration ? media.currentTime / media.duration * 100 : 0) + '%';
+
+  if (cur.kind === 'scene') {
+    const si = idxAt(media.currentTime), s = items()[si];
+    const clsInfo = Object.fromEntries((cur.res.classes || []).map(c => [c.key, c]));
+    const counts = {};
+    let shown = null;
+    const fid = focusId(si);
+    // primero los objetos, luego las personas encima
+    [...s.objects].sort((a, b) => (a.cls === 'person') - (b.cls === 'person')).forEach(o => {
+      const ci = clsInfo[o.cls] || { es: o.cls, en: o.cls, emoji: '📦' };
+      counts[o.cls] = (counts[o.cls] || 0) + 1;
+      if (o.cls === 'person') {
+        const p = actAt(o.id, si);
+        if (p) {
+          const k = argmax(p);
+          drawLabeled(o.box, COLORS[k], LABELS[k].emoji, `#${o.id} ${lname(LABELS[k])} ${(p[k] * 100).toFixed(0)}%`, dpr, sx, sy, { bold: o.id === fid });
+          if (o.id === fid) shown = p;
+        } else drawLabeled(o.box, OBJ_COLOR, ci.emoji, `#${o.id} ${ci[lang]}`, dpr, sx, sy, { small: true });
+      } else drawLabeled(o.box, OBJ_COLOR, ci.emoji, `${ci[lang]} ${Math.round(o.conf * 100)}%`, dpr, sx, sy, { small: true, dashed: true });
+    });
+    if (shown) showPanel(shown, `#${fid} · t=${s.t.toFixed(1)}s`); else showNone(t('noPerson'));
+    $('others').textContent = Object.keys(counts).length ? t('inScene') + ' ' + Object.entries(counts).map(([c, n]) => `${(clsInfo[c]?.emoji) || ''} ${n}× ${clsInfo[c]?.[lang] || c}`).join(' · ') : '';
+  } else if (cur.type === 'video') {
+    const i = idxAt(media.currentTime), s = items()[i], p = probs[i];
+    if (!p) return showNone();
+    showPanel(p, `t=${s.t.toFixed(2)}s`);
+    const k = argmax(p);
+    drawLabeled(s.box, COLORS[k], LABELS[k].emoji, `${lname(LABELS[k])} ${(p[k] * 100).toFixed(0)}%`, dpr, sx, sy, { bold: true, dashed: !s.detected });
+  } else {
+    const F = items();
+    F.forEach((f, i) => { const k = argmax(probs[i]); drawLabeled(f.box, COLORS[k], LABELS[k].emoji, `${lname(LABELS[k])} ${(probs[i][k] * 100).toFixed(0)}%`, dpr, sx, sy, { bold: i === sel, dashed: !f.detected }); });
+    const f = F[sel];
+    showPanel(probs[sel], f.detected ? (F.length > 1 ? `${t('face')} ${sel + 1}/${F.length}` : '') : t('wholeImg'));
+  }
+}
+addEventListener('resize', draw);
+
+// ---------------- cámara en directo ----------------
+let live = null;   // {ws, stream, src, last, ema: Map id->probs, fpsT: []}
+$('liveBtn').onclick = () => live ? (stopLive(), closeView()) : startLive();
+
+function stopLive() {
+  if (!live) return;
+  const l = live; live = null;
+  try { l.ws.close(); } catch {}
+  l.stream?.getTracks().forEach(tr => tr.stop());
+  $('liveStat').textContent = '';
+  applyLang();
+}
+
+async function startLive() {
+  const kind = mode === 'scene' ? 'scene' : 'emotion';
+  // ?livesrc=archivo  → simula la cámara con un video de la biblioteca (para pruebas)
+  const fake = new URLSearchParams(location.search).get('livesrc');
+  if (live) stopLive();
+  cur = { live: true, kind, name: null, res: null }; probs = [];
+  LABELS = ALL[kind]; buildStatic(); buildCalibSelect();
+  $('calib').value = kind === 'emotion' ? 'library' : 'none';
+  $('timeline').hidden = true; $('chips').innerHTML = ''; $('smoothWrap').hidden = true;
+  renderLib();
+  const stage = $('stage');
+  stage.innerHTML = `<div class="placeholder">${t('liveCam')}</div>`;
+  const v = document.createElement('video');
+  v.muted = true; v.playsInline = true; v.autoplay = true;
+  const L = { ws: null, stream: null, src: v, last: null, ema: new Map(), fpsT: [], mirror: !fake, busy: false };
+  live = L; applyLang();
+  try {
+    if (fake) { v.src = '/media/' + encodeURIComponent(fake); v.loop = true; }
+    else { L.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); v.srcObject = L.stream; }
+    await v.play();
+  } catch (e) {
+    stage.innerHTML = `<div class="placeholder">${t('liveErr')} ${esc(e.message || e)}</div>`;
+    live = null; applyLang(); return;
+  }
+  if (live !== L) return;
+  if (L.mirror) v.style.transform = 'scaleX(-1)';
+  stage.innerHTML = ''; stage.append(v, cv);
+  media = v;
+  $('liveStat').textContent = t('liveLoading');
+  const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/live?mode=${kind}`);
+  L.ws = ws;
+  const grab = document.createElement('canvas'), gctx = grab.getContext('2d');
+  const send = () => {
+    if (live !== L || ws.readyState !== 1 || !v.videoWidth) return;
+    const s = Math.min(1, 640 / v.videoWidth);
+    grab.width = Math.round(v.videoWidth * s); grab.height = Math.round(v.videoHeight * s);
+    gctx.drawImage(v, 0, 0, grab.width, grab.height);
+    grab.toBlob(b => { if (b && live === L && ws.readyState === 1) { ws.send(b); L.busy = true; } }, 'image/jpeg', 0.75);
+  };
+  ws.onmessage = ev => {
+    const m = JSON.parse(ev.data);
+    if (m.status === 'ready') { send(); return; }
+    if (m.status) return;
+    L.busy = false; L.last = m;
+    const now = performance.now(); L.fpsT.push(now); L.fpsT = L.fpsT.filter(x => now - x < 2000);
+    // probabilidades suavizadas por id (media móvil exponencial)
+    const T = +$('temp').value, mean = $('calib').value === 'library' && kind === 'emotion' ? libMean : null;
+    m.objects.forEach(o => {
+      if (!o.sims) return;
+      const p = softmax(o.sims.map((x, k) => mean ? x - mean[k] : x), T);
+      const old = L.ema.get(o.id);
+      L.ema.set(o.id, old ? old.map((x, k) => 0.6 * x + 0.4 * p[k]) : p);
+    });
+    $('liveStat').textContent = `${(L.fpsT.length / 2).toFixed(0)} fps · ${kind === 'scene' ? 'YOLO' : 'caras'} ${m.det_ms} ms · Gemma ${m.gemma_ms ?? '…'} ms`;
+    draw();
+    setTimeout(send, 40);
+  };
+  ws.onclose = () => { if (live === L) { $('liveStat').textContent = t('liveConn'); } };
+  const loop = () => { if (live !== L) return; draw(); requestAnimationFrame(loop); };
+  loop();
+}
+
+function drawLive(dpr) {
+  const m = live?.last;
+  if (!m) { showNone(t('liveWait')); return; }
+  const sx = cv.width / m.w, sy = cv.height / m.h, mir = live.mirror;
+  const flip = b => mir ? [m.w - b[2], b[1], m.w - b[0], b[3]] : b;
+  const counts = {};
+  let main = null;
+  [...m.objects].sort((a, b) => (a.cls === 'person') - (b.cls === 'person')).forEach(o => {
+    const p = live.ema.get(o.id);
+    counts[o.cls] = (counts[o.cls] || 0) + 1;
+    if ((o.cls === 'person' || o.cls === 'face') && p) {
+      const k = argmax(p);
+      drawLabeled(flip(o.box), COLORS[k], LABELS[k].emoji, `${o.cls === 'person' ? '#' + o.id + ' ' : ''}${lname(LABELS[k])} ${(p[k] * 100).toFixed(0)}%`, dpr, sx, sy, { bold: true });
+      if (!main || area(o.box) > area(main.box)) main = { box: o.box, p, id: o.id };
+    } else {
+      const ci = { person: { es: 'persona', en: 'person', emoji: '🧑' }, face: { es: 'cara', en: 'face', emoji: '🙂' } }[o.cls]
+        || { es: o.cls, en: o.cls, emoji: '📦' };
+      drawLabeled(flip(o.box), OBJ_COLOR, ci.emoji, ci[lang], dpr, sx, sy, { small: true, dashed: o.cls !== 'person' && o.cls !== 'face' });
+    }
+  });
+  if (main) showPanel(main.p, cur.kind === 'scene' ? `#${main.id}` : ''); else showNone(m.objects.length ? t('liveWait') : (cur.kind === 'scene' ? t('noPerson') : t('noFace')));
+  $('others').textContent = Object.keys(counts).length ? t('inScene') + ' ' + Object.entries(counts).map(([c, n]) => `${n}× ${c}`).join(' · ') : '';
+}
+
+// ---------------- arranque ----------------
+(async () => {
+  try {
+    ALL = await api('/api/labels');
+    LABELS = ALL[mode];
+    await refreshLibrary();
+    applyLang();
+    poll(true);
+    const q = new URLSearchParams(location.search);
+    if (q.get('mode')) { mode = q.get('mode'); applyLang(); }
+    if (q.get('lang')) { lang = q.get('lang'); applyLang(); }
+    const it = q.get('open') ? library.find(x => x.name === q.get('open')) : null;
+    if (it) open(it);
+  } catch (e) {
+    console.error(e);
+    $('offline').hidden = false;
+    applyLang();
+  }
+})();
+</script>
+</body>
+</html>

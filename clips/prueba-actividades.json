@@ -1,0 +1,79 @@
+[
+ {
+  "start": 0.0,
+  "end": 3.0,
+  "activity": "running",
+  "note": "dos personas corriendo",
+  "source": "mk_40881.mp4"
+ },
+ {
+  "start": 3.0,
+  "end": 6.0,
+  "activity": "drinking",
+  "note": "tomando café",
+  "source": "yt_hPrv-0QDnSc.mp4"
+ },
+ {
+  "start": 6.0,
+  "end": 9.0,
+  "activity": "cycling",
+  "note": "ciclista pequeño y lejano en un parque",
+  "source": "mk_2002.mp4"
+ },
+ {
+  "start": 9.0,
+  "end": 12.0,
+  "activity": "dancing",
+  "note": "chica bailando",
+  "source": "yt_ZmM36viuNus.mp4"
+ },
+ {
+  "start": 12.0,
+  "end": 15.0,
+  "activity": "sitting",
+  "note": "niño sentado en un banco",
+  "source": "mk_4720.mp4"
+ },
+ {
+  "start": 15.0,
+  "end": 18.0,
+  "activity": "horse",
+  "note": "gente a caballo en la playa",
+  "source": "yt_FyyODwkJZJc.mp4"
+ },
+ {
+  "start": 18.0,
+  "end": 21.0,
+  "activity": "walking",
+  "note": "chica andando por un parque",
+  "source": "mk_4823.mp4"
+ },
+ {
+  "start": 21.0,
+  "end": 24.0,
+  "activity": "cycling",
+  "note": "ciclista en carretera visto desde un dron",
+  "source": "yt_Wbo0IY1tSRo.mp4"
+ },
+ {
+  "start": 24.0,
+  "end": 27.0,
+  "activity": "exercise",
+  "note": "chica entrenando con kettlebell",
+  "source": "Functional_Movement_-_4_Kettlebell_Exercises_-_Full_Body_Wor [NAKsQjS1Gyg].mp4"
+ },
+ {
+  "start": 27.0,
+  "end": 30.0,
+  "activity": "sitting",
+  "note": "mujer sentada en un sofá",
+  "source": "yt_zUCrIeXEWLc.mp4"
+ },
+ {
+  "start": 30.0,
+  "end": 33.0,
+  "activity": "running",
+  "note": "carrera de atletismo (velocistas)",
+  "source": "yt_9dUW9YCAJ7M.mp4"
+ }
+]
